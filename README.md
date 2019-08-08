@@ -7,7 +7,8 @@ A small project which crawl the content of a website (https://medium.com/) to ex
 ## How to run ?
 
  1. Install dependencies => `npm i`
- 2. Run it => `node index`
+ 2. Start the server => `node index`
+ 3. Hit the server on any browser => `http://localhost:3000/`
 
 
 
