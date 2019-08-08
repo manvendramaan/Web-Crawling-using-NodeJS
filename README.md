@@ -6,8 +6,8 @@ A small project which crawl the content of a website (https://medium.com/) to ex
 
 ## How to run ?
 
- 1. Install dependencies => npm i 
- 2. Run it => node index 
+ 1. Install dependencies => `npm i`
+ 2. Run it => `node index`
 
 
 
