@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.1",
+    "express-rate-limit": "^5.0.0",
     "mongodb": "^3.3.0-beta2",
     "node-html-parser": "^1.1.16",
     "request": "^2.88.0"

@@ -1,10 +1,19 @@
 const express = require('express');
 const request = require('request');
 const HTMLParser = require('node-html-parser');
+const rateLimit = require("express-rate-limit");
 const app = express();
 
 const MongoClient = require('mongodb').MongoClient;
 const url = 'mongodb://localhost:27017/';
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5
+});
+ 
+// applied limit of 5 for all incoming requests from one IP in interval of 15 minutes
+app.use(apiLimiter);
 
 app.get('/', function(req, res){
 	
@@ -81,6 +90,7 @@ app.get('/', function(req, res){
 			})
 		}
 		
+		// storing formattedUrlsList to MongoDB
 		storingDataInMongoDB(formattedUrlsList);
 
 		res.send(formattedUrlsList)
@@ -100,7 +110,7 @@ function storingDataInMongoDB(dataArr)
 		  
 		if (err) throw err;
 		
-		console.log("Urls inserted");
+		console.log("Urls stored successfully.");
 		
 		db.close();
 	  });
