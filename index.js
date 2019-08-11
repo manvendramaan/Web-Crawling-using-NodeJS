@@ -1,7 +1,6 @@
 const express = require('express');
-const request = require('request');
-const HTMLParser = require('node-html-parser');
 const rateLimit = require("express-rate-limit");
+const puppeteer = require('puppeteer');
 const app = express();
 
 const MongoClient = require('mongodb').MongoClient;
@@ -15,65 +14,50 @@ const apiLimiter = rateLimit({
 // applied limit of 5 for all incoming requests from one IP in interval of 15 minutes
 app.use(apiLimiter);
 
-app.get('/', function(req, res){
+app.get('/', async function(req, res){
 	
-	const url = 'https://medium.com/';
-
-    request(url, function(error, response, body){
-		if(error)
-		{
-			throw error;
-		}
-		let root = HTMLParser.parse(body);
-		let raw_data = root.querySelectorAll('a');
+  try{		
+		const browser = await puppeteer.launch();
+		const page = await browser.newPage();
+		// loading the url
+		const data = await page.goto('https://medium.com/', { waitUntil: 'networkidle2', timeout: 1000*120 // 2 minutes });
 		
-	    	// extracting the urls from anchor tag
-		const urls = [];
-		for(let i=0; i < raw_data.length; i++)
-		{
-			 urls.push(raw_data[i].rawAttrs.split('href="')[1].split('"')[0]);
-		}
-		
+		// extracting hrefs from DOM
+		const urls = await page.$$eval('a', anchorTag => {
+			return anchorTag.map(a => a.href)
+		});
+		await browser.close();
+		  
 		const urlsList = [];
-		
-		// filtering unique url along with its occurrences and params list
+			
+		// extracting unique url along with its occurrences and params list
 		urls.forEach((url) => {
 			
 			if(urlsList.indexOf(url) <= -1)
 			{
 				urlsList[url] = {};
 				urlsList[url].count = 1;
-				try{
-					let actualUrl = new URL(url);
-					let search_params = new URLSearchParams(actualUrl.search); 
-					
-					let params = [];	
-					// iterate over the query parameters
-					for(let i of search_params) {
-						params.push(i[0]);
-					}
-					urlsList[url].params = params;
-				}catch(e)
-				{
-					console.error(e)
+				let actualUrl = new URL(url);
+				let search_params = new URLSearchParams(actualUrl.search); 
+				
+				let params = [];	
+				// iterate over the query parameters
+				for(let i of search_params) {
+					params.push(i[0]);
 				}
+				urlsList[url].params = params;
 			}else
 			{
 				urlsList[url].count = urlsList[url].count + 1;
-				try{
-					let actualUrl = new URL(url);
-					let search_params = new URLSearchParams(actualUrl.search); 
-	
-					// iterate over the query parameters
-					for(let i of search_params) {
-						if(urlsList[url].params.indexOf(i[0]) <= -1)
-						{
-							urlsList[url].params.push(i[0]);
-						}
+				let actualUrl = new URL(url);
+				let search_params = new URLSearchParams(actualUrl.search); 
+
+				// iterate over the query parameters
+				for(let i of search_params) {
+					if(urlsList[url].params.indexOf(i[0]) <= -1)
+					{
+						urlsList[url].params.push(i[0]);
 					}
-				}catch(e)
-				{
-					console.error(e)
 				}
 			}
 		})
@@ -94,19 +78,21 @@ app.get('/', function(req, res){
 		storingDataInMongoDB(formattedUrlsList);
 
 		res.send(formattedUrlsList)
-	});
- 
+	  
+  }catch(e){
+	  throw e;
+  }
+	
 })
 
 function storingDataInMongoDB(dataArr)
 {
-	// connecting MongoDB
 	MongoClient.connect(url, function(err, db) {
 		
 	  if (err) throw err;
 	  
 	  const dbo = db.db("urlsList");
-	  // storing dataArr in MongoDB
+	  
 	  dbo.collection("urls").insertMany(dataArr, function(err, res) {
 		  
 		if (err) throw err;
