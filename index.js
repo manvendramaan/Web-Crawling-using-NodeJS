@@ -20,7 +20,7 @@ app.get('/', async function(req, res){
 		const browser = await puppeteer.launch();
 		const page = await browser.newPage();
 		// loading the url
-		const data = await page.goto('https://medium.com/', { waitUntil: 'networkidle2', timeout: 1000*120 // 2 minutes });
+		await page.goto('https://medium.com/', { waitUntil: 'networkidle2', timeout: 1000*120 });
 		
 		// extracting hrefs from DOM
 		const urls = await page.$$eval('a', anchorTag => {
