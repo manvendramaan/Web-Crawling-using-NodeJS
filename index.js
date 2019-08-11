@@ -22,12 +22,12 @@ app.get('/', function(req, res){
     request(url, function(error, response, body){
 		if(error)
 		{
-			console.error(error);
-			res.send('error',error);
+			throw error;
 		}
 		let root = HTMLParser.parse(body);
 		let raw_data = root.querySelectorAll('a');
 		
+	    	// extracting the urls from anchor tag
 		const urls = [];
 		for(let i=0; i < raw_data.length; i++)
 		{
@@ -36,7 +36,7 @@ app.get('/', function(req, res){
 		
 		const urlsList = [];
 		
-		// extracting unique url along with its occurrences and params list
+		// filtering unique url along with its occurrences and params list
 		urls.forEach((url) => {
 			
 			if(urlsList.indexOf(url) <= -1)
@@ -100,12 +100,13 @@ app.get('/', function(req, res){
 
 function storingDataInMongoDB(dataArr)
 {
+	// connecting MongoDB
 	MongoClient.connect(url, function(err, db) {
 		
 	  if (err) throw err;
 	  
 	  const dbo = db.db("urlsList");
-	  
+	  // storing dataArr in MongoDB
 	  dbo.collection("urls").insertMany(dataArr, function(err, res) {
 		  
 		if (err) throw err;
